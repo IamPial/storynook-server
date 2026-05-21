@@ -27,6 +27,25 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+
+    const db = client.db("storynook");
+    const addRoomCollection = db.collection("AddRoom");
+
+    //read data
+    app.get("/room", async (req, res) => {
+      const getRoomData = req.body;
+      const result = await addRoomCollection.find(getRoomData).toArray();
+      res.send(result);
+    });
+
+    // create data
+    app.post("/room", async (req, res) => {
+      const roomData = req.body;
+      console.log(roomData);
+      const result = await addRoomCollection.insertOne(roomData);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
