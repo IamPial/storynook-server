@@ -34,14 +34,15 @@ async function run() {
 
     //read data
     app.get("/room", async (req, res) => {
-      const getRoomData = req.body;
       const limit = req.query.limit ? parseInt(req.query.limit) : 0;
       const result = await addRoomCollection
-        .find(getRoomData)
+        .find()
+        .sort({ _id: -1 })
         .limit(limit)
         .toArray();
       res.send(result);
     });
+
     //room details
     app.get("/room/:id", async (req, res) => {
       const id = req.params.id;
@@ -58,6 +59,26 @@ async function run() {
       const result = await addRoomCollection.insertOne(roomData);
       res.send(result);
     });
+
+    // app.patch("/room/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const updateData = req.body;
+    //   console.log(updateData);
+    //   const result = await addRoomCollection.updateOne(
+    //     { _id: new ObjectId(id) },
+    //     { $set: updateData },
+    //   );
+    //   res.send(result);
+    // });
+
+    // app.delete("/room/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const result = await addRoomCollection.deleteOne({
+    //     _id: new ObjectId(id),
+    //   });
+    //   console.log(result);
+    //   res.send(result);
+    // });
 
     //reading booking Data
     app.get("/booking", async (req, res) => {
