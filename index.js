@@ -35,7 +35,11 @@ async function run() {
     //read data
     app.get("/room", async (req, res) => {
       const getRoomData = req.body;
-      const result = await addRoomCollection.find(getRoomData).toArray();
+      const limit = req.query.limit ? parseInt(req.query.limit) : 0;
+      const result = await addRoomCollection
+        .find(getRoomData)
+        .limit(limit)
+        .toArray();
       res.send(result);
     });
     //room details
