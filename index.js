@@ -47,7 +47,7 @@ async function run() {
       res.send(result);
     });
 
-    // create data
+    // creating room data
     app.post("/room", async (req, res) => {
       const roomData = req.body;
       console.log(roomData);
@@ -55,6 +55,13 @@ async function run() {
       res.send(result);
     });
 
+    //reading booking Data
+    app.get("/booking", async (req, res) => {
+      const bookingData = req.body;
+      const result = await bookingRoomCollection.find(bookingData).toArray();
+      res.send(result);
+    });
+    //creating booking Data
     app.post("/booking", async (req, res) => {
       const bookingData = req.body;
       console.log(bookingData);
