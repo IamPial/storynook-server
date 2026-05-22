@@ -30,6 +30,7 @@ async function run() {
 
     const db = client.db("storynook");
     const addRoomCollection = db.collection("AddRoom");
+    const bookingRoomCollection = db.collection("booking");
 
     //read data
     app.get("/room", async (req, res) => {
@@ -51,6 +52,13 @@ async function run() {
       const roomData = req.body;
       console.log(roomData);
       const result = await addRoomCollection.insertOne(roomData);
+      res.send(result);
+    });
+
+    app.post("/booking", async (req, res) => {
+      const bookingData = req.body;
+      console.log(bookingData);
+      const result = await bookingRoomCollection.insertOne(bookingData);
       res.send(result);
     });
 
