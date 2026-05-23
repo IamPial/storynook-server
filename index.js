@@ -103,6 +103,15 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/room/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const result = await addRoomCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      console.log(result);
+      res.send(result);
+    });
+
     //reading booking Data
     app.get("/booking", async (req, res) => {
       const bookingData = req.body;
