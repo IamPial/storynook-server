@@ -61,6 +61,7 @@ async function run() {
     // creating room data
     app.post("/room", async (req, res) => {
       const roomData = req.body;
+      roomData.createdAt = new Date();
       console.log(roomData);
       const result = await addRoomCollection.insertOne(roomData);
       res.send(result);
