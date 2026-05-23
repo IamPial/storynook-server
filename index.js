@@ -32,8 +32,10 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload;
     next();
   } catch (error) {
+    console.log("Token verify error:", error.message);
     return res.status(403).json({ message: "Forbidden" });
   }
 };
@@ -66,7 +68,7 @@ async function run() {
     });
 
     //room details
-    app.get("/room/:id", verifyToken, async (req, res) => {
+    app.get("/room/:id", async (req, res) => {
       const id = req.params.id;
       const result = await addRoomCollection.findOne({
         _id: new ObjectId(id),
@@ -78,32 +80,28 @@ async function run() {
     app.post("/room", async (req, res) => {
       const roomData = req.body;
       roomData.createdAt = new Date();
-      console.log(roomData);
       const result = await addRoomCollection.insertOne(roomData);
       res.send(result);
     });
 
     //verify Token
-    app.patch("/room/:id", async (req, res) => {
+    app.patch("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const userId = req.user.id;
+      const userId = req.user.sub;
+
+      const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
+      console.log("room.userId:", room.userId);
+      console.log("token userId:", userId);
+      if (room.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const updateData = req.body;
-      console.log(updateData);
       const result = await addRoomCollection.updateOne(
         { _id: new ObjectId(id) },
         { $set: updateData },
       );
       res.send(result);
     });
-
-    // app.delete("/room/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const result = await addRoomCollection.deleteOne({
-    //     _id: new ObjectId(id),
-    //   });
-    //   console.log(result);
-    //   res.send(result);
-    // });
 
     //reading booking Data
     app.get("/booking", async (req, res) => {
@@ -112,12 +110,10 @@ async function run() {
       res.send(result);
     });
     //creating booking Data
-    app.post("/booking", async (req, res) => {
+    app.post("/booking", verifyToken, async (req, res) => {
       const bookingData = req.body;
       console.log(bookingData);
-      const result = await bookingRoomCollection
-        .insertOne(bookingData)
-        .sort({ _id: -1 });
+      const result = await bookingRoomCollection.insertOne(bookingData);
 
       await addRoomCollection.updateOne(
         { _id: new ObjectId(bookingData.roomId) },
