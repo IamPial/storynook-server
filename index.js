@@ -18,6 +18,7 @@ const uri = process.env.MONGODB_URI;
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
   console.log(authHeader);
   next();
 };
