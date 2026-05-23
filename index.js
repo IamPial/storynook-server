@@ -16,6 +16,12 @@ app.get("/", (req, res) => {
 
 const uri = process.env.MONGODB_URI;
 
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  console.log(authHeader);
+  next();
+};
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -46,8 +52,6 @@ async function run() {
     //room details
     app.get("/room/:id", async (req, res) => {
       const id = req.params.id;
-      const header = req.headers.authorization;
-      console.log(header);
       const result = await addRoomCollection.findOne({
         _id: new ObjectId(id),
       });
@@ -62,9 +66,8 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/room/:id", async (req, res) => {
-      const header = req.headers.authorization;
-      console.log(header);
+    //verify Token
+    app.patch("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const userId = req.user.id;
       const updateData = req.body;
