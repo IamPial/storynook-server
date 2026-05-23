@@ -46,6 +46,8 @@ async function run() {
     //room details
     app.get("/room/:id", async (req, res) => {
       const id = req.params.id;
+      const header = req.headers.authorization;
+      console.log(header);
       const result = await addRoomCollection.findOne({
         _id: new ObjectId(id),
       });
@@ -60,16 +62,19 @@ async function run() {
       res.send(result);
     });
 
-    // app.patch("/room/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const updateData = req.body;
-    //   console.log(updateData);
-    //   const result = await addRoomCollection.updateOne(
-    //     { _id: new ObjectId(id) },
-    //     { $set: updateData },
-    //   );
-    //   res.send(result);
-    // });
+    app.patch("/room/:id", async (req, res) => {
+      const header = req.headers.authorization;
+      console.log(header);
+      const id = req.params.id;
+      const userId = req.user.id;
+      const updateData = req.body;
+      console.log(updateData);
+      const result = await addRoomCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData },
+      );
+      res.send(result);
+    });
 
     // app.delete("/room/:id", async (req, res) => {
     //   const id = req.params.id;
@@ -90,7 +95,15 @@ async function run() {
     app.post("/booking", async (req, res) => {
       const bookingData = req.body;
       console.log(bookingData);
-      const result = await bookingRoomCollection.insertOne(bookingData);
+      const result = await bookingRoomCollection
+        .insertOne(bookingData)
+        .sort({ _id: -1 });
+
+      await addRoomCollection.updateOne(
+        { _id: new ObjectId(bookingData.roomId) },
+        { $inc: { bookingCount: 1 } },
+      );
+
       res.send(result);
     });
 
