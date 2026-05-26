@@ -176,6 +176,17 @@ async function run() {
       }
     });
 
+    //clear cookie with logout
+    app.post("/api/auth/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        })
+        .json({ success: true, message: "Logged out successfully" });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
