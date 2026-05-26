@@ -26,7 +26,6 @@ const verifyToken = async (req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
   try {
     const { payload } = await jwtVerify(token, JWKS);
     req.user = { id: payload.sub || payload.userId };
@@ -87,7 +86,7 @@ async function run() {
     //verify Token
     app.patch("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const userId = req.user.sub;
+      const userId = req.user.id;
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
       if (room.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
@@ -102,7 +101,7 @@ async function run() {
 
     app.delete("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const userId = req.user.sub;
+      const userId = req.user.id;
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
       if (room.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
@@ -136,7 +135,7 @@ async function run() {
     app.patch("/booking/:id/cancel", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
-        const userId = req.user.sub;
+        const userId = req.user.id;
         const bookingData = await bookingRoomCollection.findOne({
           _id: new ObjectId(id),
         });
