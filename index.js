@@ -55,6 +55,7 @@ async function run() {
     const db = client.db("storynook");
     const addRoomCollection = db.collection("AddRoom");
     const bookingRoomCollection = db.collection("booking");
+    const userBookingCollection = db.collection("userBookingList");
 
     //read data
     app.get("/room", async (req, res) => {
@@ -133,6 +134,50 @@ async function run() {
         { $inc: { bookingCount: 1 } },
       );
       res.send(result);
+    });
+
+    app.patch("/booking/:id/cancel", verifyToken, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const userId = req.user.sub;
+        const bookingData = await bookingRoomCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        if (!bookingData) {
+          return res.status(404).json({ message: "Booking not found" });
+        }
+
+        if (bookingData.userId !== userId) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+
+        //changes the status confirmed to cancelled
+        const result = await bookingRoomCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status: "cancelled" } },
+        );
+
+        //remove the booking id from the user collection
+        await userBookingCollection.updateOne(
+          { id: userId },
+          { $pull: { bookings: id } },
+        );
+
+        //decrease the booking count
+        if (bookingData.roomId) {
+          await addRoomCollection.updateOne(
+            { _id: new ObjectId(bookingData.roomId) },
+            { $inc: { bookingCount: -1 } },
+          );
+        }
+        res
+          .status(200)
+          .json({ message: "Booking cancelled", success: true, result });
+      } catch (error) {
+        console.error("Cancel Route Error:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     });
 
     // Send a ping to confirm a successful connection
