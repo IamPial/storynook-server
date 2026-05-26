@@ -22,19 +22,14 @@ const uri = process.env.MONGODB_URI;
 const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
 
 const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const token = authHeader.split(" ")[1];
-
+  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
-    req.user = payload;
+    req.user = { id: payload.sub || payload.userId };
     next();
   } catch (error) {
     console.log("Token verify error:", error.message);
