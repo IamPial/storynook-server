@@ -10,7 +10,12 @@ const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 //middleware
 app.use(cookieParser());
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -76,8 +81,9 @@ async function run() {
     });
 
     // creating room data
-    app.post("/room", async (req, res) => {
+    app.post("/room", verifyToken, async (req, res) => {
       const roomData = req.body;
+      roomData.userId = req.user.id;
       roomData.createdAt = new Date();
       const result = await addRoomCollection.insertOne(roomData);
       res.send(result);
@@ -113,15 +119,15 @@ async function run() {
     });
 
     //reading booking Data
-    app.get("/booking", async (req, res) => {
-      const { userId } = req.query;
-      const filter = userId ? { userId } : {};
-      const result = await bookingRoomCollection.find(filter).toArray();
+    app.get("/booking", verifyToken, async (req, res) => {
+      const userId = req.user.id;
+      const result = await bookingRoomCollection.find({ userId }).toArray();
       res.send(result);
     });
     //creating booking Data
     app.post("/booking", verifyToken, async (req, res) => {
       const bookingData = req.body;
+      bookingData.userId = req.user.id;
       bookingData.status = "confirmed";
       const result = await bookingRoomCollection.insertOne(bookingData);
 
