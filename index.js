@@ -59,8 +59,10 @@ async function run() {
     //read data
     app.get("/room", async (req, res) => {
       const limit = req.query.limit ? parseInt(req.query.limit) : 0;
+      const userId = req.query.userId;
+      const filterUserData = userId ? { userId } : {};
       const result = await addRoomCollection
-        .find()
+        .find(filterUserData)
         .sort({ _id: -1 })
         .limit(limit)
         .toArray();
@@ -88,10 +90,7 @@ async function run() {
     app.patch("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const userId = req.user.sub;
-
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
-      console.log("room.userId:", room.userId);
-      console.log("token userId:", userId);
       if (room.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
@@ -105,30 +104,34 @@ async function run() {
 
     app.delete("/room/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
+      const userId = req.user.sub;
+      const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
+      if (room.userId !== userId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const result = await addRoomCollection.deleteOne({
         _id: new ObjectId(id),
       });
-      console.log(result);
       res.send(result);
     });
 
     //reading booking Data
     app.get("/booking", async (req, res) => {
-      const bookingData = req.body;
-      const result = await bookingRoomCollection.find(bookingData).toArray();
+      const { userId } = req.query;
+      const filter = userId ? { userId } : {};
+      const result = await bookingRoomCollection.find(filter).toArray();
       res.send(result);
     });
     //creating booking Data
     app.post("/booking", verifyToken, async (req, res) => {
       const bookingData = req.body;
-      console.log(bookingData);
+      bookingData.status = "confirmed";
       const result = await bookingRoomCollection.insertOne(bookingData);
 
       await addRoomCollection.updateOne(
         { _id: new ObjectId(bookingData.roomId) },
         { $inc: { bookingCount: 1 } },
       );
-
       res.send(result);
     });
 
