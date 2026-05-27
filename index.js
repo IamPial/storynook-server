@@ -61,10 +61,27 @@ async function run() {
     //read data
     app.get("/room", async (req, res) => {
       const limit = req.query.limit ? parseInt(req.query.limit) : 0;
-      const userId = req.query.userId;
-      const filterUserData = userId ? { userId } : {};
+      const { userId, search, amenities } = req.query;
+      let query = {};
+
+      //find user Id
+      if (userId) {
+        query.userId = userId;
+      }
+
+      //for searching with name
+      if (search) {
+        query.name = { $regex: search, $options: "i" };
+      }
+
+      //checked amenities array
+      if (amenities) {
+        const amenitiesArray = amenities.split(",");
+        query.amenities = { $in: amenitiesArray };
+      }
+
       const result = await addRoomCollection
-        .find(filterUserData)
+        .find(query)
         .sort({ _id: -1 })
         .limit(limit)
         .toArray();
@@ -94,6 +111,7 @@ async function run() {
       const id = req.params.id;
       const userId = req.user.id;
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
+
       if (room.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
