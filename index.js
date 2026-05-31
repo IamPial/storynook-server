@@ -12,7 +12,7 @@ const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL,
     credentials: true,
   }),
 );
@@ -24,13 +24,23 @@ app.get("/", (req, res) => {
 
 const uri = process.env.MONGODB_URI;
 
-const JWKS = createRemoteJWKSet(new URL("http://localhost:3000/api/auth/jwks"));
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 
 const verifyToken = async (req, res, next) => {
-  const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
+  let token = req.cookies?.token;
+  console.log("token", token);
+
+  if (!token) {
+    const authHeader = req.headers?.authorization;
+    token = authHeader?.split(" ")[1];
+  }
+
   if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
+
   try {
     const { payload } = await jwtVerify(token, JWKS);
     req.user = { id: payload.sub || payload.userId };
@@ -89,6 +99,7 @@ async function run() {
     });
 
     //room details
+
     app.get("/room/:id", async (req, res) => {
       const id = req.params.id;
       const result = await addRoomCollection.findOne({
@@ -113,7 +124,9 @@ async function run() {
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
 
       if (room.userId !== userId) {
-        return res.status(403).json({ message: "Forbidden" });
+        return res.status(401).json({
+          message: "Unauthorized",
+        });
       }
       const updateData = req.body;
       const result = await addRoomCollection.updateOne(
@@ -128,7 +141,9 @@ async function run() {
       const userId = req.user.id;
       const room = await addRoomCollection.findOne({ _id: new ObjectId(id) });
       if (room.userId !== userId) {
-        return res.status(403).json({ message: "Forbidden" });
+        return res.status(401).json({
+          message: "Unauthorized",
+        });
       }
       const result = await addRoomCollection.deleteOne({
         _id: new ObjectId(id),
@@ -191,12 +206,12 @@ async function run() {
             { $inc: { bookingCount: -1 } },
           );
         }
-        res
-          .status(200)
-          .json({ message: "Booking cancelled", success: true, result });
+        res.send(result);
       } catch (error) {
-        console.error("Cancel Route Error:", error);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("error:", error);
+        return res.status(401).json({
+          message: "Unauthorized",
+        });
       }
     });
 
@@ -222,6 +237,23 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+//set token from the cookie
+app.post("/auth/set-token", (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token missing" });
+  }
+
+  res
+    .cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    })
+    .json({ success: true });
+});
 
 app.listen(port, () => {
   console.log(`Server is running on ${port}`);
